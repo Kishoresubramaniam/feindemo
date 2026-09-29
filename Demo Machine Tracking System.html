@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Machine Tracking System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-700 p-2 rounded-lg shadow-inner">
+                    <i class="fa-solid fa-truck-fast text-indigo-200 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide">DemoFlow HQ</h1>
+                    <p class="text-xs text-indigo-300">Demo Machine Asset Movement & Tracking</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-2 bg-indigo-800/60 px-3 py-1.5 rounded-full text-xs border border-indigo-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-indigo-200">HQ Asset Hub Active</span>
+                </div>
+                <button onclick="openModal('transferModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition flex items-center space-x-2">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>New Transfer</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Metrics / Summary Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Fleet</p>
+                    <h3 id="statTotal" class="text-2xl font-bold text-slate-700 mt-1">0</h3>
+                    <span class="text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded mt-2 inline-block">Registered Units</span>
+                </div>
+                <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 text-lg shadow-sm">
+                    <i class="fa-solid fa-server"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">At HQ Warehouse</p>
+                    <h3 id="statHq" class="text-2xl font-bold text-slate-700 mt-1">0</h3>
+                    <span class="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded mt-2 inline-block">Ready to Dispatch</span>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-lg shadow-sm">
+                    <i class="fa-solid fa-warehouse"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">In Transit / Field</p>
+                    <h3 id="statField" class="text-2xl font-bold text-slate-700 mt-1">0</h3>
+                    <span class="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded mt-2 inline-block">With Sales Engineers</span>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 text-lg shadow-sm">
+                    <i class="fa-solid fa-route"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Active Transfers</p>
+                    <h3 id="statTransfers" class="text-2xl font-bold text-slate-700 mt-1">0</h3>
+                    <span class="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded mt-2 inline-block">Dispatch Operations</span>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 text-lg shadow-sm">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                </div>
+            </div>
+        </section>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-4 border-b border-slate-100 gap-4">
+                <!-- Tab Buttons -->
+                <div class="flex space-x-2 bg-slate-100 p-1 rounded-xl">
+                    <button onclick="switchTab('machines')" id="tabBtnMachines" class="px-4 py-2 text-sm font-semibold rounded-lg bg-white text-indigo-700 shadow-sm transition">Demo Machines</button>
+                    <button onclick="switchTab('transfers')" id="tabBtnTransfers" class="px-4 py-2 text-sm font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">Movement Log</button>
+                    <button onclick="switchTab('engineers')" id="tabBtnEngineers" class="px-4 py-2 text-sm font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">Sales Engineers</button>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="flex items-center space-x-3 w-full sm:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-search text-xs"></i>
+                        </span>
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search equipment or region..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <button onclick="openModal('machineModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1 shrink-0">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span class="hidden sm:inline">Add Machine</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: MACHINES INVENTORY -->
+            <div id="tabMachines" class="p-6 overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wider font-semibold">
+                            <th class="pb-3 px-3">Model & Serial</th>
+                            <th class="pb-3 px-3">Category</th>
+                            <th class="pb-3 px-3">Current Location / Holder</th>
+                            <th class="pb-3 px-3">Condition</th>
+                            <th class="pb-3 px-3">Status</th>
+                            <th class="pb-3 px-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="machinesTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TAB 2: TRANSFERS / MOVEMENTS -->
+            <div id="tabTransfers" class="p-6 overflow-x-auto hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-100 text-slate-400 text-xs uppercase tracking-wider font-semibold">
+                            <th class="pb-3 px-3">Transfer ID</th>
+                            <th class="pb-3 px-3">Machine</th>
+                            <th class="pb-3 px-3">From</th>
+                            <th class="pb-3 px-3">To (Sales Engineer / Region)</th>
+                            <th class="pb-3 px-3">Date Dispatched</th>
+                            <th class="pb-3 px-3">Status</th>
+                            <th class="pb-3 px-3 text-right">Update Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transfersTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TAB 3: SALES ENGINEERS -->
+            <div id="tabEngineers" class="p-6 overflow-x-auto hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="engineersGrid">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Machine Modal -->
+    <div id="machineModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-800">Register New Demo Machine</h3>
+                <button onclick="closeModal('machineModal')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="machineForm" onsubmit="handleCreateMachine(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Machine Name / Model</label>
+                    <input type="text" id="mName" required placeholder="e.g. LaserScan Pro X1" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Serial Number</label>
+                    <input type="text" id="mSerial" required placeholder="e.g. SN-998231-HQ" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Category</label>
+                    <select id="mCategory" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="Diagnostic Analyzer">Diagnostic Analyzer</option>
+                        <option value="Precision Measurement">Precision Measurement</option>
+                        <option value="Surgical Laser">Surgical Laser</option>
+                        <option value="Optical Scanner">Optical Scanner</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Initial Condition</label>
+                    <select id="mCondition" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="Brand New">Brand New</option>
+                        <option value="Refurbished / Certified">Refurbished / Certified</option>
+                        <option value="Lightly Used">Lightly Used</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('machineModal')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-medium shadow-sm transition">Save Machine</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Transfer Modal -->
+    <div id="transferModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-5">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-800">Dispatch Demo Machine</h3>
+                <button onclick="closeModal('transferModal')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="transferForm" onsubmit="handleCreateTransfer(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Select Machine (At HQ)</label>
+                    <select id="tMachineId" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Destination Sales Engineer</label>
+                    <select id="tEngineerId" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Expected Purpose / Client</label>
+                    <input type="text" id="tPurpose" required placeholder="e.g. Hospital Trial at City Health" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Expected Return Date</label>
+                    <input type="date" id="tReturnDate" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('transferModal')" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-medium shadow-sm transition">Initiate Dispatch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-sm">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMessage">Action completed successfully.</span>
+    </div>
+
+    <script>
+        let appData = {
+            machines: [
+                { id: 'm1', name: 'LaserScan Pro X1', serial: 'SN-7890-HQ', category: 'Optical Scanner', condition: 'Brand New', location: 'HQ Warehouse', status: 'At HQ', holderId: null },
+                { id: 'm2', name: 'BioScreen Multi-Analyzer', serial: 'SN-4432-HQ', category: 'Diagnostic Analyzer', condition: 'Refurbished / Certified', location: 'North Region', status: 'In Field', holderId: 'eng1' },
+                { id: 'm3', name: 'SpectraPulse 300', serial: 'SN-1102-HQ', category: 'Precision Measurement', condition: 'Brand New', location: 'HQ Warehouse', status: 'At HQ', holderId: null },
+                { id: 'm4', name: 'OrthoLaser 5000', serial: 'SN-9081-HQ', category: 'Surgical Laser', condition: 'Lightly Used', location: 'West Region', status: 'In Field', holderId: 'eng2' }
+            ],
+            engineers: [
+                { id: 'eng1', name: 'Marcus Vance', region: 'North Region (Delhi / NCR)', email: 'marcus.v@company.com', phone: '+91 98765 43210' },
+                { id: 'eng2', name: 'Priya Sharma', region: 'West Region (Mumbai / Pune)', email: 'priya.s@company.com', phone: '+91 98234 56789' },
+                { id: 'eng3', name: 'Ananya Iyer', region: 'South Region (Bangalore / Chennai)', email: 'ananya.i@company.com', phone: '+91 97411 22334' },
+                { id: 'eng4', name: 'David Miller', region: 'East Region (Kolkata)', email: 'david.m@company.com', phone: '+91 96321 88776' }
+            ],
+            transfers: [
+                { id: 'TRF-1001', machineId: 'm2', machineName: 'BioScreen Multi-Analyzer', from: 'HQ Warehouse', toId: 'eng1', toName: 'Marcus Vance (North Region)', date: '2026-03-10', returnDate: '2026-04-15', purpose: 'AIIMS Delhi Demo Evaluation', status: 'Delivered' },
+                { id: 'TRF-1002', machineId: 'm4', machineName: 'OrthoLaser 5000', from: 'HQ Warehouse', toId: 'eng2', toName: 'Priya Sharma (West Region)', date: '2026-03-18', returnDate: '2026-04-20', purpose: 'Kokilaben Hospital Tech Meet', status: 'In Transit' }
+            ]
+        };
+
+        let currentSearchQuery = '';
+
+        function loadState() {
+            const saved = localStorage.getItem('demo_flow_app_state');
+            if (saved) {
+                try { appData = JSON.parse(saved); } catch(e) {}
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('demo_flow_app_state', JSON.stringify(appData));
+        }
+
+        window.onload = function() {
+            loadState();
+            renderAll();
+        };
+
+        function renderAll() {
+            renderStats();
+            renderMachines();
+            renderTransfers();
+            renderEngineers();
+            populateModalDropdowns();
+        }
+
+        function switchTab(tabName) {
+            ['machines', 'transfers', 'engineers'].forEach(t => {
+                const el = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if (t === tabName) {
+                    el.classList.remove('hidden');
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg bg-white text-indigo-700 shadow-sm transition";
+                } else {
+                    el.classList.add('hidden');
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition";
+                }
+            });
+        }
+
+        function renderStats() {
+            document.getElementById('statTotal').innerText = appData.machines.length;
+            document.getElementById('statHq').innerText = appData.machines.filter(m => m.status === 'At HQ').length;
+            document.getElementById('statField').innerText = appData.machines.filter(m => m.status === 'In Field').length;
+            document.getElementById('statTransfers').innerText = appData.transfers.filter(t => t.status === 'In Transit' || t.status === 'Dispatched').length;
+        }
+
+        function renderMachines() {
+            const tbody = document.getElementById('machinesTableBody');
+            tbody.innerHTML = '';
+            const filtered = appData.machines.filter(m => 
+                m.name.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
+                m.serial.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
+                m.category.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
+                m.location.toLowerCase().includes(currentSearchQuery.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">No demo machines found matching your criteria.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(m => {
+                const statusBadge = m.status === 'At HQ' 
+                    ? '<span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-xs font-semibold">At HQ Warehouse</span>'
+                    : '<span class="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full text-xs font-semibold">In Field</span>';
+
+                let holderText = m.location;
+                if (m.holderId) {
+                    const eng = appData.engineers.find(e => e.id === m.holderId);
+                    if (eng) holderText = `${eng.name} (${eng.region.split(' ')[0]})`;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-3">
+                            <p class="font-semibold text-slate-700">${m.name}</p>
+                            <span class="text-xs text-slate-400 font-mono">${m.serial}</span>
+                        </td>
+                        <td class="py-3 px-3 text-slate-600">${m.category}</td>
+                        <td class="py-3 px-3 font-medium text-slate-700">${holderText}</td>
+                        <td class="py-3 px-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">${m.condition}</span></td>
+                        <td class="py-3 px-3">${statusBadge}</td>
+                        <td class="py-3 px-3 text-right">
+                            ${m.status === 'At HQ' 
+                                ? `<button onclick="quickDispatch('${m.id}')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-paper-plane mr-1"></i> Dispatch</button>`
+                                : `<button onclick="returnToHq('${m.id}')" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-rotate-left mr-1"></i> Return to HQ</button>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderTransfers() {
+            const tbody = document.getElementById('transfersTableBody');
+            tbody.innerHTML = '';
+            const filtered = appData.transfers.filter(t => 
+                t.id.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
+                t.machineName.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
+                t.toName.toLowerCase().includes(currentSearchQuery.toLowerCase()) ||
+                t.status.toLowerCase().includes(currentSearchQuery.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">No transfer logs found matching criteria.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(t => {
+                let statusBadge = '';
+                if (t.status === 'Delivered') statusBadge = '<span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-xs font-semibold">Delivered & Active</span>';
+                else if (t.status === 'In Transit') statusBadge = '<span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full text-xs font-semibold">In Transit</span>';
+                else if (t.status === 'Returned') statusBadge = '<span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full text-xs font-semibold">Returned to HQ</span>';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-3 font-mono text-xs font-bold text-indigo-600">${t.id}</td>
+                        <td class="py-3 px-3 font-medium text-slate-700">${t.machineName}</td>
+                        <td class="py-3 px-3 text-slate-500">${t.from}</td>
+                        <td class="py-3 px-3 text-slate-700 font-medium">${t.toName}<br><span class="text-xs text-slate-400 font-normal">Purpose: ${t.purpose}</span></td>
+                        <td class="py-3 px-3 text-xs text-slate-500">${t.date} <br><span class="text-[10px] text-slate-400">Return: ${t.returnDate}</span></td>
+                        <td class="py-3 px-3">${statusBadge}</td>
+                        <td class="py-3 px-3 text-right">
+                            <select onchange="updateTransferStatus('${t.id}', this.value)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-indigo-500">
+                                <option value="" disabled selected>Change Status</option>
+                                <option value="In Transit">In Transit</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Returned">Returned</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderEngineers() {
+            const grid = document.getElementById('engineersGrid');
+            grid.innerHTML = '';
+            appData.engineers.forEach(eng => {
+                const assignedMachines = appData.machines.filter(m => m.holderId === eng.id);
+                let unitsHtml = assignedMachines.length === 0 
+                    ? '<p class="text-xs text-slate-400 italic">No demo units currently assigned.</p>'
+                    : assignedMachines.map(m => `
+                        <div class="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                            <div>
+                                <p class="font-semibold text-slate-700">${m.name}</p>
+                                <span class="text-[10px] text-slate-400 font-mono">${m.serial}</span>
+                            </div>
+                            <button onclick="returnToHq('${m.id}')" class="text-amber-600 hover:text-amber-700 font-medium bg-amber-50 px-2 py-1 rounded-lg">Return</button>
+                        </div>
+                    `).join('');
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-base">${eng.name}</h4>
+                                    <span class="text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded inline-block mt-1">${eng.region}</span>
+                                </div>
+                                <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 font-bold text-sm">
+                                    ${eng.name.split(' ').map(n=>n[0]).join('')}
+                                </div>
+                            </div>
+                            <div class="text-xs text-slate-500 space-y-1 pt-2 border-t border-slate-100">
+                                <p><i class="fa-regular fa-envelope mr-1.5 text-slate-400"></i>${eng.email}</p>
+                                <p><i class="fa-solid fa-phone mr-1.5 text-slate-400"></i>${eng.phone}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Assigned Demo Units (${assignedMachines.length})</p>
+                            <div class="space-y-1.5">
+                                ${unitsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function populateModalDropdowns() {
+            const machineSelect = document.getElementById('tMachineId');
+            const engineerSelect = document.getElementById('tEngineerId');
+
+            machineSelect.innerHTML = '';
+            const availableMachines = appData.machines.filter(m => m.status === 'At HQ');
+            if (availableMachines.length === 0) {
+                machineSelect.innerHTML = '<option value="" disabled selected>No machines available at HQ</option>';
+            } else {
+                availableMachines.forEach(m => {
+                    machineSelect.innerHTML += `<option value="${m.id}">${m.name} (${m.serial})</option>`;
+                });
+            }
+
+            engineerSelect.innerHTML = '';
+            appData.engineers.forEach(e => {
+                engineerSelect.innerHTML += `<option value="${e.id}">${e.name} — ${e.region}</option>`;
+            });
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            if (modalId === 'transferModal') {
+                populateModalDropdowns();
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function handleCreateMachine(event) {
+            event.preventDefault();
+            const name = document.getElementById('mName').value;
+            const serial = document.getElementById('mSerial').value;
+            const category = document.getElementById('mCategory').value;
+            const condition = document.getElementById('mCondition').value;
+
+            appData.machines.push({
+                id: 'm_' + Math.random().toString(36).substr(2, 6),
+                name,
+                serial,
+                category,
+                condition,
+                location: 'HQ Warehouse',
+                status: 'At HQ',
+                holderId: null
+            });
+
+            saveState();
+            renderAll();
+            closeModal('machineModal');
+            document.getElementById('machineForm').reset();
+            showToast('New demo machine successfully registered at HQ.');
+        }
+
+        function handleCreateTransfer(event) {
+            event.preventDefault();
+            const machineId = document.getElementById('tMachineId').value;
+            const engineerId = document.getElementById('tEngineerId').value;
+            const purpose = document.getElementById('tPurpose').value;
+            const returnDate = document.getElementById('tReturnDate').value;
+
+            const machine = appData.machines.find(m => m.id === machineId);
+            const engineer = appData.engineers.find(e => e.id === engineerId);
+
+            if (!machine || !engineer) return;
+
+            machine.status = 'In Field';
+            machine.location = engineer.region;
+            machine.holderId = engineer.id;
+
+            appData.transfers.unshift({
+                id: 'TRF-' + Math.floor(1000 + Math.random() * 9000),
+                machineId: machine.id,
+                machineName: machine.name,
+                from: 'HQ Warehouse',
+                toId: engineer.id,
+                toName: `${engineer.name} (${engineer.region})`,
+                date: new Date().toISOString().split('T')[0],
+                returnDate,
+                purpose,
+                status: 'In Transit'
+            });
+
+            saveState();
+            renderAll();
+            closeModal('transferModal');
+            document.getElementById('transferForm').reset();
+            showToast(`Machine ${machine.name} dispatched to ${engineer.name}.`);
+        }
+
+        function quickDispatch(machineId) {
+            openModal('transferModal');
+            document.getElementById('tMachineId').value = machineId;
+        }
+
+        function returnToHq(machineId) {
+            const machine = appData.machines.find(m => m.id === machineId);
+            if (!machine) return;
+
+            machine.status = 'At HQ';
+            machine.location = 'HQ Warehouse';
+            machine.holderId = null;
+
+            appData.transfers.unshift({
+                id: 'TRF-' + Math.floor(1000 + Math.random() * 9000),
+                machineId: machine.id,
+                machineName: machine.name,
+                from: 'Field Sales Engineer',
+                toId: 'hq',
+                toName: 'HQ Central Warehouse',
+                date: new Date().toISOString().split('T')[0],
+                returnDate: '-',
+                purpose: 'Completed Trial / Routine Inspection',
+                status: 'Returned'
+            });
+
+            saveState();
+            renderAll();
+            showToast(`Machine ${machine.name} returned successfully to HQ warehouse.`);
+        }
+
+        function updateTransferStatus(transferId, newStatus) {
+            const transfer = appData.transfers.find(t => t.id === transferId);
+            if (transfer) {
+                transfer.status = newStatus;
+                if (newStatus === 'Returned') {
+                    returnToHq(transfer.machineId);
+                } else {
+                    saveState();
+                    renderAll();
+                }
+                showToast(`Transfer ${transferId} status updated to ${newStatus}.`);
+            }
+        }
+
+        function handleSearch() {
+            currentSearchQuery = document.getElementById('searchInput').value;
+            renderMachines();
+            renderTransfers();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
